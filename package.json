@@ -1,0 +1,162 @@
+{
+  "name": "panda-stack",
+  "displayName": "Panda Stack",
+  "description": "this extension can make your day (no guarantees)",
+  "version": "0.0.3",
+  "publisher": "EfeDonmez",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Efe-Donmez/panda-stack"
+  },
+  "icon": "panda.png",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Other",
+    "Snippets"
+  ],
+  "activationEvents": [
+    "onView:pandaExplorer",
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "panda-stack.helloWorld",
+        "title": "Hello World"
+      },
+      {
+        "command": "panda-stack.dartAction",
+        "title": "Panda Dart Action"
+      },
+      {
+        "command": "panda-stack.refreshPandaView",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "panda-stack.addFlutterWidget",
+        "title": "Add Flutter Widget"
+      },
+      {
+        "command": "panda-stack.addCommandShortcut",
+        "title": "Add Command Shortcut",
+        "icon": "$(add)"
+      },
+      {
+        "command": "panda-stack.executeCommandShortcut",
+        "title": "Execute Command Shortcut"
+      },
+      {
+        "command": "panda-stack.deleteCommandShortcut",
+        "title": "Delete Command Shortcut",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "panda-stack.addSnippetShortcut",
+        "title": "Add Snippet Shortcut",
+        "icon": "$(add)"
+      },
+      {
+        "command": "panda-stack.executeSnippetShortcut",
+        "title": "Execute Snippet Shortcut"
+      },
+      {
+        "command": "panda-stack.deleteSnippetShortcut",
+        "title": "Delete Snippet Shortcut",
+        "icon": "$(trash)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "panda-explorer",
+          "title": "Panda Stack",
+          "icon": "src/resources/panda.svg"
+        }
+      ]
+    },
+    "views": {
+      "panda-explorer": [
+        {
+          "id": "pandaExplorer",
+          "name": "Panda Explorer"
+        }
+      ]
+    },
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "explorerResourceIsFolder && workspaceFolderCount != 0",
+          "command": "panda-stack.dartAction",
+          "group": "pandaGroup"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "panda-stack.refreshPandaView",
+          "when": "view == pandaExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "panda-stack.addCommandShortcut",
+          "when": "view == pandaExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "panda-stack.addSnippetShortcut",
+          "when": "view == pandaExplorer", 
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "panda-stack.addFlutterWidget",
+          "when": "view == pandaExplorer && viewItem == flutterProject",
+          "group": "inline"
+        },
+        {
+          "command": "panda-stack.addCommandShortcut",
+          "when": "view == pandaExplorer && viewItem == shortcutsCategory",
+          "group": "inline"
+        },
+        {
+          "command": "panda-stack.deleteCommandShortcut",
+          "when": "view == pandaExplorer && viewItem == commandShortcut",
+          "group": "inline"
+        },
+        {
+          "command": "panda-stack.addSnippetShortcut",
+          "when": "view == pandaExplorer && viewItem == snippetsCategory",
+          "group": "inline"
+        },
+        {
+          "command": "panda-stack.deleteSnippetShortcut",
+          "when": "view == pandaExplorer && viewItem == snippetShortcut",
+          "group": "inline"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.100.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "eslint": "^9.25.1",
+    "typescript": "^5.8.3",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.5.2"
+}
+}
