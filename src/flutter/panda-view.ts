@@ -68,9 +68,9 @@ export class PandaViewProvider implements vscode.TreeDataProvider<PandaItem> {
             // Görünümü güncelle
             this._onDidChangeTreeData.fire();
             // Kullanıcıyı bilgilendir
-            vscode.window.showInformationMessage(`"${shortcutTitle}" komut kısayolu silindi.`);
+            vscode.window.showInformationMessage(vscode.l10n.t('Command shortcut "{0}" deleted', shortcutTitle));
         } else {
-            vscode.window.showErrorMessage(`Kısayol bulunamadı: ${shortcutId}`);
+            vscode.window.showErrorMessage(vscode.l10n.t('Command shortcut not found: {0}', shortcutId));
         }
     }
     
@@ -83,9 +83,9 @@ export class PandaViewProvider implements vscode.TreeDataProvider<PandaItem> {
             // Görünümü güncelle
             this._onDidChangeTreeData.fire();
             // Kullanıcıyı bilgilendir
-            vscode.window.showInformationMessage(`"${shortcutTitle}" snippet kısayolu silindi.`);
+            vscode.window.showInformationMessage(vscode.l10n.t('Snippet shortcut "{0}" deleted', shortcutTitle));
         } else {
-            vscode.window.showErrorMessage(`Snippet kısayolu bulunamadı: ${shortcutId}`);
+            vscode.window.showErrorMessage(vscode.l10n.t('Snippet shortcut not found: {0}', shortcutId));
         }
     }
 
@@ -141,8 +141,8 @@ export class PandaViewProvider implements vscode.TreeDataProvider<PandaItem> {
         
         // Komut Kısayolları kategorisi
         const shortcutsCategory = new PandaItem(
-            'Komut Kısayolları', 
-            'Sık kullanılan komutlar',
+            vscode.l10n.t('Command Shortcuts'),
+            vscode.l10n.t('Frequently used commands'),
             '',
             'shortcutsCategory',
             vscode.TreeItemCollapsibleState.Expanded
@@ -159,8 +159,8 @@ export class PandaViewProvider implements vscode.TreeDataProvider<PandaItem> {
         
         // Snippet Kısayolları kategorisi
         const snippetsCategory = new PandaItem(
-            'Snippet Kısayolları', 
-            'Sık kullanılan kod parçacıkları',
+            vscode.l10n.t('Snippet Shortcuts'),
+            vscode.l10n.t('Frequently used code snippets'),
             '',
             'snippetsCategory',
             vscode.TreeItemCollapsibleState.Expanded

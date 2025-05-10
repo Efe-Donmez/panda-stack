@@ -1,0 +1,40 @@
+{
+  "panda-stack.helloWorld.title": "Merhaba Dünya",
+  "panda-stack.dartAction.title": "Panda Dart İşlemi",
+  "panda-stack.refreshPandaView.title": "Yenile",
+  "panda-stack.addFlutterWidget.title": "Flutter Widget Ekle",
+  "panda-stack.addCommandShortcut.title": "Komut Kısayolu Ekle",
+  "panda-stack.executeCommandShortcut.title": "Komut Kısayolunu Çalıştır",
+  "panda-stack.deleteCommandShortcut.title": "Komut Kısayolunu Sil",
+  "panda-stack.addSnippetShortcut.title": "Snippet Kısayolu Ekle",
+  "panda-stack.executeSnippetShortcut.title": "Snippet Kısayolunu Çalıştır",
+  "panda-stack.deleteSnippetShortcut.title": "Snippet Kısayolunu Sil",
+  
+  "panda-explorer.title": "Panda Stack",
+  "pandaExplorer.name": "Panda Gezgini",
+  
+  "commandShortcuts.category": "Komut Kısayolları",
+  "commandShortcuts.description": "Sık kullanılan komutlar",
+  "snippetShortcuts.category": "Snippet Kısayolları",
+  "snippetShortcuts.description": "Sık kullanılan kod parçacıkları",
+  
+  "fileTypes.placeholder": ".dart,.ts,.js,*",
+  "fileTypes.prompt": "Bu snippet'in hangi dosya türlerinde çalışacağını belirtin (virgülle ayırarak). Tüm dosya türleri için * kullanın.",
+  "title.placeholder": "Kısayol Başlığı",
+  "title.prompt": "Kısayolunuz için bir başlık girin",
+  "description.placeholder": "Açıklama (isteğe bağlı)",
+  "description.prompt": "Kısayol için açıklama girin",
+  
+  "snippet.save": "Snippeti Kaydet",
+  "snippet.added": "\"{0}\" snippet eklendi",
+  "snippet.deleted": "\"{0}\" snippet kısayolu silindi",
+  "snippet.fileRequired": "Snippet eklemek için bir dosya açık olmalıdır!",
+  "snippet.fileTypeWarning": "Bu snippet sadece {0} dosya türlerinde çalışır.",
+  "snippet.addError": "Snippet eklenirken hata oluştu.",
+  "snippet.notFound": "Snippet kısayolu bulunamadı: {0}",
+  
+  "command.save": "Komutu Kaydet",
+  "command.added": "\"{0}\" komut kısayolu eklendi",
+  "command.deleted": "\"{0}\" komut kısayolu silindi",
+  "command.notFound": "Kısayol bulunamadı: {0}"
+} 

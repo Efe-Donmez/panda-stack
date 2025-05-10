@@ -2,7 +2,7 @@
   "name": "panda-stack",
   "displayName": "Panda Stack",
   "description": "this extension can make your day (no guarantees)",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "EfeDonmez",
   "repository": {
     "type": "git",
@@ -25,47 +25,47 @@
     "commands": [
       {
         "command": "panda-stack.helloWorld",
-        "title": "Hello World"
+        "title": "%panda-stack.helloWorld.title%"
       },
       {
         "command": "panda-stack.dartAction",
-        "title": "Panda Dart Action"
+        "title": "%panda-stack.dartAction.title%"
       },
       {
         "command": "panda-stack.refreshPandaView",
-        "title": "Refresh",
+        "title": "%panda-stack.refreshPandaView.title%",
         "icon": "$(refresh)"
       },
       {
         "command": "panda-stack.addFlutterWidget",
-        "title": "Add Flutter Widget"
+        "title": "%panda-stack.addFlutterWidget.title%"
       },
       {
         "command": "panda-stack.addCommandShortcut",
-        "title": "Add Command Shortcut",
+        "title": "%panda-stack.addCommandShortcut.title%",
         "icon": "$(add)"
       },
       {
         "command": "panda-stack.executeCommandShortcut",
-        "title": "Execute Command Shortcut"
+        "title": "%panda-stack.executeCommandShortcut.title%"
       },
       {
         "command": "panda-stack.deleteCommandShortcut",
-        "title": "Delete Command Shortcut",
+        "title": "%panda-stack.deleteCommandShortcut.title%",
         "icon": "$(trash)"
       },
       {
         "command": "panda-stack.addSnippetShortcut",
-        "title": "Add Snippet Shortcut",
+        "title": "%panda-stack.addSnippetShortcut.title%",
         "icon": "$(add)"
       },
       {
         "command": "panda-stack.executeSnippetShortcut",
-        "title": "Execute Snippet Shortcut"
+        "title": "%panda-stack.executeSnippetShortcut.title%"
       },
       {
         "command": "panda-stack.deleteSnippetShortcut",
-        "title": "Delete Snippet Shortcut",
+        "title": "%panda-stack.deleteSnippetShortcut.title%",
         "icon": "$(trash)"
       }
     ],
@@ -73,7 +73,7 @@
       "activitybar": [
         {
           "id": "panda-explorer",
-          "title": "Panda Stack",
+          "title": "%panda-explorer.title%",
           "icon": "resources/panda.svg"
         }
       ]
@@ -82,7 +82,7 @@
       "panda-explorer": [
         {
           "id": "pandaExplorer",
-          "name": "Panda Explorer"
+          "name": "%pandaExplorer.name%"
         }
       ]
     },
@@ -158,5 +158,5 @@
     "typescript": "^5.8.3",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.5.2"
-}
+  }
 }

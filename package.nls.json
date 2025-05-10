@@ -1,0 +1,40 @@
+{
+  "panda-stack.helloWorld.title": "Hello World",
+  "panda-stack.dartAction.title": "Panda Dart Action",
+  "panda-stack.refreshPandaView.title": "Refresh",
+  "panda-stack.addFlutterWidget.title": "Add Flutter Widget",
+  "panda-stack.addCommandShortcut.title": "Add Command Shortcut",
+  "panda-stack.executeCommandShortcut.title": "Execute Command Shortcut",
+  "panda-stack.deleteCommandShortcut.title": "Delete Command Shortcut",
+  "panda-stack.addSnippetShortcut.title": "Add Snippet Shortcut",
+  "panda-stack.executeSnippetShortcut.title": "Execute Snippet Shortcut",
+  "panda-stack.deleteSnippetShortcut.title": "Delete Snippet Shortcut",
+  
+  "panda-explorer.title": "Panda Stack",
+  "pandaExplorer.name": "Panda Explorer",
+  
+  "commandShortcuts.category": "Command Shortcuts",
+  "commandShortcuts.description": "Frequently used commands",
+  "snippetShortcuts.category": "Snippet Shortcuts",
+  "snippetShortcuts.description": "Frequently used code snippets",
+  
+  "fileTypes.placeholder": ".dart,.ts,.js,*",
+  "fileTypes.prompt": "Specify file types for this snippet (comma separated). Use * for all file types.",
+  "title.placeholder": "Shortcut Title",
+  "title.prompt": "Enter a title for your shortcut",
+  "description.placeholder": "Description (optional)",
+  "description.prompt": "Enter a description for this shortcut",
+  
+  "snippet.save": "Save Snippet",
+  "snippet.added": "Snippet \"{0}\" added",
+  "snippet.deleted": "Snippet shortcut \"{0}\" deleted",
+  "snippet.fileRequired": "A file must be open to add a snippet!",
+  "snippet.fileTypeWarning": "This snippet only works with {0} file types.",
+  "snippet.addError": "Error adding snippet.",
+  "snippet.notFound": "Snippet shortcut not found: {0}",
+  
+  "command.save": "Save Command",
+  "command.added": "Command shortcut \"{0}\" added",
+  "command.deleted": "Command shortcut \"{0}\" deleted",
+  "command.notFound": "Command shortcut not found: {0}"
+} 
