@@ -7,7 +7,7 @@ interface SnippetShortcut {
     id: string;
     title: string;
     fileTypes: string; // Örn: ".ts,.js,.dart"
-    snippetCode: string;
+    snippetCode: string; // Çok satırlı kod parçaları desteklenir
     description: string;
 }
 
@@ -72,8 +72,13 @@ export class PandaSnippetProvider implements vscode.CompletionItemProvider {
                 vscode.CompletionItemKind.Snippet
             );
             
+            // Çok satırlı kodlar için düzgün şekilde SnippetString oluştur
             item.insertText = new vscode.SnippetString(snippet.snippetCode);
-            item.documentation = new vscode.MarkdownString(snippet.description || 'Panda Stack snippet');
+            item.documentation = new vscode.MarkdownString(
+                `**${snippet.title}**\n\n` +
+                (snippet.description ? `${snippet.description}\n\n` : '') +
+                '```\n' + snippet.snippetCode + '\n```'
+            );
             item.detail = `Panda Stack: ${snippet.title}`;
             
             return item;

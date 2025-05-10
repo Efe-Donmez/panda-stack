@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import { DartProjectManager } from './flutter/dart-project';
 import { PandaViewProvider } from './flutter/panda-view';
-import { PandaSnippetProvider } from './flutter/snippet-provider';
+import { PandaSnippetProvider } from './snippet/snippet-provider';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -36,15 +36,6 @@ export function activate(context: vscode.ExtensionContext) {
         
         // PandaViewProvider'a snippet güncellemelerini dinleme işlevi ekle
         pandaViewProvider.onSnippetUpdated = refreshSnippetProvider;
-
-        // The command has been defined in the package.json file
-        // Now provide the implementation of the command with registerCommand
-        // The commandId parameter must match the command field in package.json
-        const helloWorldDisposable = vscode.commands.registerCommand('panda-stack.helloWorld', () => {
-            // The code you place here will be executed every time your command is executed
-            // Display a message box to the user
-            vscode.window.showInformationMessage('Hello World from Panda Stack!');
-        });
 
         // Register the Dart specific command for context menu
         const dartActionDisposable = vscode.commands.registerCommand('panda-stack.dartAction', async (uri: vscode.Uri) => {
@@ -175,29 +166,145 @@ export function activate(context: vscode.ExtensionContext) {
                     return; // Kullanıcı iptal etti veya boş bıraktı
                 }
                 
-                // Snippet kodunu al - çok satırlı girdi için QuickPick yerine InputBox kullanıyoruz
-                const snippetCode = await vscode.window.showInputBox({
-                    placeHolder: 'Snippet kodunu girin',
-                    prompt: 'Eklemek istediğiniz kod parçacığını girin',
-                    ignoreFocusOut: true, // Kullanıcı başka pencereye geçse bile inputbox açık kalır
-                });
-                
-                if (!snippetCode || snippetCode.trim() === '') {
-                    console.log('Snippet shortcut creation cancelled: No snippet code provided');
-                    return; // Kullanıcı iptal etti veya boş bıraktı
-                }
-                
                 // Açıklama girişi için input box göster
                 const descriptionInput = await vscode.window.showInputBox({
                     placeHolder: 'Açıklama (isteğe bağlı)',
-                    prompt: 'Snippet için açıklama girin'
+                    prompt: 'Komut için açıklama girin'
                 });
                 
-                // Yeni snippet kısayolunu kaydet ve görünümü yenile
-                console.log(`Adding snippet shortcut: "${shortcutTitle}" for file types: ${fileTypes}`);
-                pandaViewProvider.addSnippetShortcut(shortcutTitle, fileTypes, snippetCode, descriptionInput || '');
+                // Geçici olarak VS Code ayarlarını değiştir
+                const config = vscode.workspace.getConfiguration();
+                const originalHotExit = config.get('files.hotExit');
+                const originalConfirmClose = config.get('window.confirmBeforeClose');
                 
-                vscode.window.showInformationMessage(`"${shortcutTitle}" snippet kısayolu eklendi.`);
+                // Ayarları geçici olarak değiştir - dosyaları kaydetmeden kapatmayı sağlar
+                await config.update('files.hotExit', 'off', vscode.ConfigurationTarget.Global);
+                await config.update('window.confirmBeforeClose', 'never', vscode.ConfigurationTarget.Global);
+                
+                // VS Code uyarısının gelmemesi için "dirty" özelliğini engelleme
+                const originalOnDidChangeTextDocument = vscode.workspace.onDidChangeTextDocument;
+                let isSnippetDocumentChangeEvent = false;
+                
+                // Geçici olarak değişiklik olaylarını engelleme
+                const documentChangeListener = vscode.workspace.onDidChangeTextDocument(e => {
+                    if (e.document.uri.toString() === snippetDocument?.uri.toString()) {
+                        isSnippetDocumentChangeEvent = true;
+                    }
+                });
+                
+                // Snippet kodunu al - çok satırlı girdi için geçici dosya kullanıyoruz
+                const snippetDocument = await vscode.workspace.openTextDocument({ 
+                    content: '', 
+                    language: fileTypes.split(',')[0].replace('.', '') || 'plaintext' 
+                });
+                
+                // Dosyayı kirli olarak işaretlemeyi önlemek için bir WorkspaceEdit kullanarak değişiklikler yapma
+                const handleEdit = (text: string) => {
+                    const edit = new vscode.WorkspaceEdit();
+                    const range = new vscode.Range(
+                        new vscode.Position(0, 0),
+                        new vscode.Position(snippetDocument.lineCount, 0)
+                    );
+                    edit.replace(snippetDocument.uri, range, text);
+                    // VS Code içinde dosyanın kirli olarak işaretlenmesini önle
+                    vscode.workspace.applyEdit(edit).then(() => {
+                        (snippetDocument as any)._isDirty = false;
+                    });
+                };
+                
+                const editor = await vscode.window.showTextDocument(snippetDocument);
+                
+                // Kullanıcının doğrudan değişiklik yapmasını izleme
+                const userEditListener = vscode.workspace.onDidChangeTextDocument(e => {
+                    if (e.document === snippetDocument) {
+                        // Değişikliği işle ama dirty flag'i sıfırla
+                        (snippetDocument as any)._isDirty = false;
+                    }
+                });
+                
+                // Editor'un üzerine kaydetme butonu ekle
+                const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+                statusBarItem.text = "$(save) Snippeti Kaydet";
+                statusBarItem.tooltip = "Snippet'i kaydet ve editörü kapat";
+                statusBarItem.command = 'panda-stack.saveSnippet';
+                statusBarItem.color = new vscode.ThemeColor('terminal.ansiGreen'); // Buton metni yeşil
+                statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.successBackground');
+                statusBarItem.show();
+                
+                // Buton animasyonu için zamanlayıcı oluştur
+                let visible = true;
+                const blinkInterval = setInterval(() => {
+                    if (visible) {
+                        statusBarItem.text = "$(save) Snippeti Kaydet";
+                        statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.successBackground'); // Yeşil
+                    } else {
+                        statusBarItem.text = "$(check) Snippeti Kaydet";
+                        statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground'); // Turuncu/Kırmızı
+                    }
+                    visible = !visible;
+                }, 1000); // 1 saniyede bir değiştir
+                
+                // Kullanıcı editörü manuel olarak kapatırsa içeriği kaydet
+                let saveButtonClicked = false;
+                
+                const closeListener = vscode.window.onDidChangeVisibleTextEditors(async (editors) => {
+                    if (!editors.some(e => e.document === snippetDocument)) {
+                        // Kaydet butonuna tıklanmadıysa snippeti kaydetme
+                        if (!saveButtonClicked) {
+                            // Kaynakları temizle
+                            clearInterval(blinkInterval);
+                            statusBarItem.dispose();
+                            saveDisposable.dispose();
+                            closeListener.dispose();
+                            documentChangeListener.dispose();
+                            userEditListener.dispose();
+                            
+                            // Orijinal ayarları geri yükle
+                            await config.update('files.hotExit', originalHotExit, vscode.ConfigurationTarget.Global);
+                            await config.update('window.confirmBeforeClose', originalConfirmClose, vscode.ConfigurationTarget.Global);
+                            
+                            // Kullanıcıyı bilgilendir
+                            vscode.window.showInformationMessage(`Snippet ekleme işlemi iptal edildi.`);
+                            return;
+                        }
+                    }
+                });
+                
+                // Kaydetme komutu kaydı
+                const saveDisposable = vscode.commands.registerCommand('panda-stack.saveSnippet', async () => {
+                    saveButtonClicked = true;
+                    const snippetCode = snippetDocument.getText();
+                    
+                    // Yeni snippet kısayolunu kaydet ve görünümü yenile
+                    console.log(`Adding snippet shortcut: "${shortcutTitle}" for file types: ${fileTypes}`);
+                    pandaViewProvider.addSnippetShortcut(shortcutTitle, fileTypes, snippetCode, descriptionInput || '');
+                    
+                    // Dosyanın içeriğini temizle
+                    const edit = new vscode.WorkspaceEdit();
+                    const allDocumentRange = new vscode.Range(
+                        new vscode.Position(0, 0),
+                        new vscode.Position(snippetDocument.lineCount, 0)
+                    );
+                    edit.replace(snippetDocument.uri, allDocumentRange, '');
+                    await vscode.workspace.applyEdit(edit);
+                    
+                    // Editörü kapat - ayarları değiştirdiğimiz için kaydetme diyaloğu gelmeyecek
+                    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+                    
+                    // Kaynakları temizle
+                    clearInterval(blinkInterval);
+                    statusBarItem.dispose();
+                    saveDisposable.dispose();
+                    closeListener.dispose();
+                    documentChangeListener.dispose();
+                    userEditListener.dispose();
+                    
+                    // Orijinal ayarları geri yükle
+                    await config.update('files.hotExit', originalHotExit, vscode.ConfigurationTarget.Global);
+                    await config.update('window.confirmBeforeClose', originalConfirmClose, vscode.ConfigurationTarget.Global);
+                    
+                    vscode.window.showInformationMessage(`"${shortcutTitle}" snippet eklendi`);
+                });
             } catch (error) {
                 console.error('Error adding snippet shortcut:', error);
                 vscode.window.showErrorMessage(`Snippet kısayolu eklenirken hata oluştu: ${error}`);
@@ -231,7 +338,6 @@ export function activate(context: vscode.ExtensionContext) {
         // Properly register the disposables to ensure cleanup
         if (context && context.subscriptions) {
             context.subscriptions.push(
-                helloWorldDisposable, 
                 dartActionDisposable, 
                 refreshDisposable, 
                 addWidgetDisposable,
@@ -248,7 +354,6 @@ export function activate(context: vscode.ExtensionContext) {
             console.error('Extension context or subscriptions array is undefined');
             // Fallback disposal if context.subscriptions is unavailable
             vscode.Disposable.from(
-                helloWorldDisposable, 
                 dartActionDisposable, 
                 refreshDisposable, 
                 addWidgetDisposable,

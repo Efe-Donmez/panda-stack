@@ -2,27 +2,8 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { DartProjectManager } from './dart-project';
-
-/**
- * Komut kısayolu 
- */
-interface CommandShortcut {
-    id: string;
-    title: string;
-    command: string[];  // Komut dizisi (birden fazla komut)
-    description: string;
-}
-
-/**
- * Snippet kısayolu
- */
-interface SnippetShortcut {
-    id: string;
-    title: string;
-    fileTypes: string; // Örn: ".ts,.js,.dart"
-    snippetCode: string;
-    description: string;
-}
+import { PandaCommandProvider, CommandShortcut } from '../terminal/command-provider';
+import { PandaSnippetManager, SnippetShortcut } from '../snippet/snippet-manager';
 
 /**
  * Panel üzerindeki Dart/Flutter projeleri için TreeView sağlayıcı
@@ -31,90 +12,26 @@ export class PandaViewProvider implements vscode.TreeDataProvider<PandaItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<PandaItem | undefined | null | void> = new vscode.EventEmitter<PandaItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<PandaItem | undefined | null | void> = this._onDidChangeTreeData.event;
     
-    // Komut kısayollarını saklamak için
-    private commandShortcuts: CommandShortcut[] = [];
-    // Snippet kısayollarını saklamak için
-    private snippetShortcuts: SnippetShortcut[] = [];
-    private context: vscode.ExtensionContext;
+    private commandProvider: PandaCommandProvider;
+    private snippetManager: PandaSnippetManager;
     
     // Snippet güncellemelerini dinlemek için callback
-    onSnippetUpdated: (() => void) | undefined;
-    
-    constructor(context: vscode.ExtensionContext) {
-        this.context = context;
-        this.loadCommandShortcuts();
-        this.loadSnippetShortcuts();
-    }
-      /**
-     * Komut kısayollarını yükler
-     */
-    private loadCommandShortcuts(): void {
-        // globalState kullanarak kısayolları yükle (kalıcı depolama)
-        const shortcuts = this.context.globalState.get<CommandShortcut[]>('pandaCommandShortcuts');
-        if (shortcuts && shortcuts.length > 0) {
-            this.commandShortcuts = shortcuts;
-            console.log(`Loaded ${shortcuts.length} command shortcuts from global state`);
-        } else {
-            this.commandShortcuts = [];
-            console.log('No command shortcuts found in global state');
-        }
-    }
-      /**
-     * Snippet kısayollarını yükler
-     */
-    private loadSnippetShortcuts(): void {
-        try {
-            // globalState kullanarak snippet kısayollarını yükle (kalıcı depolama)
-            const shortcuts = this.context.globalState.get<SnippetShortcut[]>('pandaSnippetShortcuts');
-            console.log('Attempting to load snippets from global state');
-            
-            if (shortcuts && shortcuts.length > 0) {
-                this.snippetShortcuts = shortcuts;
-                console.log(`Loaded ${shortcuts.length} snippet shortcuts from global state`);
-                console.log(`Loaded snippets: ${shortcuts.map(s => s.title).join(', ')}`);
-                // Snippets içeriğini görelim
-                shortcuts.forEach((s, i) => {
-                    console.log(`Snippet ${i+1}: ID=${s.id}, Title=${s.title}, FileTypes=${s.fileTypes}`);
-                });
-            } else {
-                this.snippetShortcuts = [];
-                console.log('No snippet shortcuts found in global state');
-            }
-        } catch (error) {
-            console.error('Error loading snippet shortcuts:', error);
-            this.snippetShortcuts = [];
+    set onSnippetUpdated(callback: (() => void) | undefined) {
+        if (this.snippetManager) {
+            this.snippetManager.onSnippetUpdated = callback;
         }
     }
     
-    /**
-     * Komut kısayollarını kaydeder
-     */
-    private saveCommandShortcuts(): void {
-        // globalState kullanarak kısayolları kaydet (kalıcı depolama)
-        this.context.globalState.update('pandaCommandShortcuts', this.commandShortcuts);
-        console.log(`Saved ${this.commandShortcuts.length} command shortcuts to global state with keys: ${this.commandShortcuts.map(s => s.title).join(', ')}`);
+    constructor(private context: vscode.ExtensionContext) {
+        this.commandProvider = new PandaCommandProvider(context);
+        this.snippetManager = new PandaSnippetManager(context);
     }
-    
+
     /**
-     * Snippet kısayollarını kaydeder
-     */
-    private saveSnippetShortcuts(): void {
-        // globalState kullanarak snippet kısayollarını kaydet (kalıcı depolama)
-        this.context.globalState.update('pandaSnippetShortcuts', this.snippetShortcuts);
-        console.log(`Saved ${this.snippetShortcuts.length} snippet shortcuts to global state with keys: ${this.snippetShortcuts.map(s => s.title).join(', ')}`);
-    }    /**
      * Yeni bir komut kısayolu ekler
      */
     addCommandShortcut(title: string, commands: string[], description: string): void {
-        this.commandShortcuts.push({
-            id: Date.now().toString(),
-            title,
-            command: commands,
-            description
-        });
-        this.saveCommandShortcuts();
-        console.log(`Added command shortcut: ${title}, Total count: ${this.commandShortcuts.length}`);
-        
+        this.commandProvider.addCommandShortcut(title, commands, description);
         // Ekleme işlemi sonrası görünümü güncelle
         this._onDidChangeTreeData.fire();
     }
@@ -123,143 +40,37 @@ export class PandaViewProvider implements vscode.TreeDataProvider<PandaItem> {
      * Yeni bir snippet kısayolu ekler
      */
     addSnippetShortcut(title: string, fileTypes: string, snippetCode: string, description: string): void {
-        console.log(`Attempting to add snippet shortcut: ${title} for file types: ${fileTypes}`);
-        
-        this.snippetShortcuts.push({
-            id: Date.now().toString(),
-            title,
-            fileTypes,
-            snippetCode,
-            description
-        });
-        
-        console.log(`Snippet added to array. Current snippet count: ${this.snippetShortcuts.length}`);
-        console.log(`Snippet details: ${JSON.stringify({title, fileTypes, snippetCode: snippetCode.substring(0, 30) + '...', description})}`);
-        
-        this.saveSnippetShortcuts();
-        console.log(`Added snippet shortcut: ${title}, Total count: ${this.snippetShortcuts.length}`);
-        
+        this.snippetManager.addSnippetShortcut(title, fileTypes, snippetCode, description);
         // Ekleme işlemi sonrası görünümü güncelle
-        console.log('Firing tree data change event to refresh view');
         this._onDidChangeTreeData.fire();
-        
-        // Snippet güncellemelerini dinleyen callback'i çağır
-        if (this.onSnippetUpdated) {
-            console.log('Calling onSnippetUpdated callback');
-            this.onSnippetUpdated();
-        }
     }
     
     /**
      * Komut kısayolunu çalıştırır
      */
     executeCommandShortcut(shortcut: CommandShortcut): void {
-        // Terminal oluştur
-        const terminal = vscode.window.createTerminal(`Panda - ${shortcut.title}`);
-        terminal.show();
-        
-        // Komutları sırayla çalıştır
-        if (shortcut.command.length > 0) {
-            // İlk komutu hemen çalıştır
-            terminal.sendText(shortcut.command[0]);
-            
-            // Birden fazla komut varsa, geri kalanları sırayla çalıştır
-            if (shortcut.command.length > 1) {
-                this.executeCommandsSequentially(terminal, shortcut.command.slice(1), 0);
-            }
-        }
+        this.commandProvider.executeCommandShortcut(shortcut);
     }
     
     /**
      * Snippet kısayolunu çalıştırır
      */
     executeSnippetShortcut(shortcut: SnippetShortcut): void {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            vscode.window.showErrorMessage('Snippet eklemek için bir dosya açık olmalıdır!');
-            return;
-        }
-        
-        // Aktif dosyanın türünü kontrol et
-        const currentFileName = editor.document.fileName;
-        const currentFileExt = path.extname(currentFileName);
-        
-        // Bu snippet'in desteklediği dosya uzantılarını kontrol et
-        const supportedTypes = shortcut.fileTypes.split(',').map(type => type.trim());
-        
-        if (!supportedTypes.includes(currentFileExt) && !supportedTypes.includes('*')) {
-            vscode.window.showWarningMessage(`Bu snippet sadece ${shortcut.fileTypes} dosya türlerinde çalışır.`);
-            return;
-        }
-        
-        // Snippet'i ekle
-        editor.edit(editBuilder => {
-            const selection = editor.selection;
-            // Seçili alan varsa değiştir, yoksa imleç konumuna ekle
-            if (selection && !selection.isEmpty) {
-                editBuilder.replace(selection, shortcut.snippetCode);
-            } else {
-                editBuilder.insert(selection.active, shortcut.snippetCode);
-            }
-        }).then(success => {
-            if (success) {
-                vscode.window.showInformationMessage(`"${shortcut.title}" snippet'i eklendi.`);
-            } else {
-                vscode.window.showErrorMessage('Snippet eklenirken hata oluştu.');
-            }
-        });
+        this.snippetManager.executeSnippetShortcut(shortcut);
     }
     
-    /**
-     * Komutları sırayla terminal üzerinde çalıştırır.
-     * Her bir komut, önceki komut tamamlandıktan sonra çalıştırılır.
-     */
-    private executeCommandsSequentially(terminal: vscode.Terminal, commands: string[], index: number): void {
-        if (index >= commands.length) {
-            return; // Tüm komutlar çalıştırılmış
-        }
-        
-        // Terminale odaklan
-        terminal.show();
-        
-        // Şu anki komutu çalıştır
-        setTimeout(() => {
-            terminal.sendText(commands[index]);
-            
-            // Sonraki komut için biraz bekle ve tekrar çağır
-            setTimeout(() => {
-                this.executeCommandsSequentially(terminal, commands, index + 1);
-            }, 1000); // 1 saniye bekle
-        }, 500); // 0.5 saniye bekle
-    }
-
     /**
      * Komut kısayolunu siler
      */
     deleteCommandShortcut(shortcutId: string): void {
-        console.log(`Deleting command shortcut with id: ${shortcutId}`);
-        // Silmeden önce kısayolun var olduğundan emin ol
-        const shortcutIndex = this.commandShortcuts.findIndex(s => s.id === shortcutId);
-        
-        if (shortcutIndex !== -1) {
-            // Kısayolun adını sakla (silme işlemi sonrası kullanıcıya bilgi vermek için)
-            const shortcutTitle = this.commandShortcuts[shortcutIndex].title;
-            
-            // Kısayolu diziden kaldır
-            this.commandShortcuts.splice(shortcutIndex, 1);
-            
-            // Değişiklikleri kaydet
-            this.saveCommandShortcuts();
-            
+        const shortcutTitle = this.commandProvider.deleteCommandShortcut(shortcutId);
+        if (shortcutTitle) {
             // Görünümü güncelle
             this._onDidChangeTreeData.fire();
-            
             // Kullanıcıyı bilgilendir
             vscode.window.showInformationMessage(`"${shortcutTitle}" komut kısayolu silindi.`);
-            console.log(`Command shortcut deleted: ${shortcutTitle}, Remaining count: ${this.commandShortcuts.length}`);
         } else {
             vscode.window.showErrorMessage(`Kısayol bulunamadı: ${shortcutId}`);
-            console.error(`Command shortcut not found: ${shortcutId}`);
         }
     }
     
@@ -267,35 +78,14 @@ export class PandaViewProvider implements vscode.TreeDataProvider<PandaItem> {
      * Snippet kısayolunu siler
      */
     deleteSnippetShortcut(shortcutId: string): void {
-        console.log(`Deleting snippet shortcut with id: ${shortcutId}`);
-        // Silmeden önce kısayolun var olduğundan emin ol
-        const shortcutIndex = this.snippetShortcuts.findIndex(s => s.id === shortcutId);
-        
-        if (shortcutIndex !== -1) {
-            // Kısayolun adını sakla (silme işlemi sonrası kullanıcıya bilgi vermek için)
-            const shortcutTitle = this.snippetShortcuts[shortcutIndex].title;
-            
-            // Kısayolu diziden kaldır
-            this.snippetShortcuts.splice(shortcutIndex, 1);
-            
-            // Değişiklikleri kaydet
-            this.saveSnippetShortcuts();
-            
+        const shortcutTitle = this.snippetManager.deleteSnippetShortcut(shortcutId);
+        if (shortcutTitle) {
             // Görünümü güncelle
             this._onDidChangeTreeData.fire();
-            
-            // Snippet güncellemelerini dinleyen callback'i çağır
-            if (this.onSnippetUpdated) {
-                console.log('Calling onSnippetUpdated callback after deletion');
-                this.onSnippetUpdated();
-            }
-            
             // Kullanıcıyı bilgilendir
             vscode.window.showInformationMessage(`"${shortcutTitle}" snippet kısayolu silindi.`);
-            console.log(`Snippet shortcut deleted: ${shortcutTitle}, Remaining count: ${this.snippetShortcuts.length}`);
         } else {
             vscode.window.showErrorMessage(`Snippet kısayolu bulunamadı: ${shortcutId}`);
-            console.error(`Snippet shortcut not found: ${shortcutId}`);
         }
     }
 
@@ -304,7 +94,9 @@ export class PandaViewProvider implements vscode.TreeDataProvider<PandaItem> {
      */
     refresh(): void {
         this._onDidChangeTreeData.fire();
-    }    /**
+    }
+    
+    /**
      * Belirtilen öğenin alt öğelerini getirir
      */    
     getChildren(element?: PandaItem): Thenable<PandaItem[]> {
@@ -314,11 +106,11 @@ export class PandaViewProvider implements vscode.TreeDataProvider<PandaItem> {
             // Eğer bir kategori ise, onun alt öğelerini döndür
             if (element.contextValue === 'shortcutsCategory') {
                 // Komut kısayolları kategorisinin alt öğelerini döndür
-                console.log(`Getting children for shortcuts category, count: ${this.commandShortcuts.length}`);
+                console.log(`Getting children for shortcuts category`);
                 return Promise.resolve(this.getCommandShortcutItems());
             } else if (element.contextValue === 'snippetsCategory') {
                 // Snippet kısayolları kategorisinin alt öğelerini döndür
-                console.log(`Getting children for snippets category, count: ${this.snippetShortcuts.length}`);
+                console.log(`Getting children for snippets category`);
                 const items = this.getSnippetShortcutItems();
                 console.log(`Returned ${items.length} snippet items from getSnippetShortcutItems`);
                 return Promise.resolve(items);
@@ -338,9 +130,12 @@ export class PandaViewProvider implements vscode.TreeDataProvider<PandaItem> {
      */
     getTreeItem(element: PandaItem): vscode.TreeItem {
         return element;
-    }    /**
+    }
+    
+    /**
      * Kök öğeleri alır: Projeler ve Kısayollar
-     */    private async getRootItems(): Promise<PandaItem[]> {
+     */    
+    private async getRootItems(): Promise<PandaItem[]> {
         console.log('Getting root items');
         const items: PandaItem[] = [];
         
@@ -418,18 +213,21 @@ export class PandaViewProvider implements vscode.TreeDataProvider<PandaItem> {
         }
         
         return items;
-    }    /**
+    }
+    
+    /**
      * Komut kısayollarını TreeView öğelerine dönüştürür
      */
     private getCommandShortcutItems(): PandaItem[] {
-        console.log(`Converting ${this.commandShortcuts.length} command shortcuts to tree items`);
+        const commandShortcuts = this.commandProvider.getCommandShortcuts();
+        console.log(`Converting ${commandShortcuts.length} command shortcuts to tree items`);
         
-        if (this.commandShortcuts.length === 0) {
+        if (commandShortcuts.length === 0) {
             console.log('No command shortcuts to convert');
             return [];
         } 
         
-        return this.commandShortcuts.map(shortcut => {
+        return commandShortcuts.map(shortcut => {
             console.log(`Creating tree item for shortcut: ${shortcut.title}`);
             const commandText = Array.isArray(shortcut.command) ? shortcut.command.join(" → ") : shortcut.command;
             const item = new PandaItem(
@@ -455,14 +253,15 @@ export class PandaViewProvider implements vscode.TreeDataProvider<PandaItem> {
      * Snippet kısayollarını TreeView öğelerine dönüştürür
      */
     private getSnippetShortcutItems(): PandaItem[] {
-        console.log(`Converting ${this.snippetShortcuts.length} snippet shortcuts to tree items`);
+        const snippetShortcuts = this.snippetManager.getSnippetShortcuts();
+        console.log(`Converting ${snippetShortcuts.length} snippet shortcuts to tree items`);
         
-        if (this.snippetShortcuts.length === 0) {
+        if (snippetShortcuts.length === 0) {
             console.log('No snippet shortcuts to convert');
             return [];
         }
         
-        const items = this.snippetShortcuts.map(shortcut => {
+        const items = snippetShortcuts.map(shortcut => {
             console.log(`Creating tree item for snippet shortcut: ${shortcut.title}, ID: ${shortcut.id}, FileTypes: ${shortcut.fileTypes}`);
             const item = new PandaItem(
                 shortcut.title,

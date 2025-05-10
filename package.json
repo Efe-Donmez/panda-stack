@@ -2,7 +2,7 @@
   "name": "panda-stack",
   "displayName": "Panda Stack",
   "description": "this extension can make your day (no guarantees)",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "publisher": "EfeDonmez",
   "repository": {
     "type": "git",
@@ -74,7 +74,7 @@
         {
           "id": "panda-explorer",
           "title": "Panda Stack",
-          "icon": "src/resources/panda.svg"
+          "icon": "resources/panda.svg"
         }
       ]
     },
